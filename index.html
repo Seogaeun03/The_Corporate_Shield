@@ -1,85 +1,184 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Corporate Shield - Presentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/@marp-team/marp-core/dist/browser.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
             font-family: 'Pretendard', 'Segoe UI', sans-serif;
-            background: #f5f5f5;
+            background: #000;
+            overflow: hidden;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            text-align: center;
+
+        #presentation {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        h1 {
-            color: #1f77b4;
-            margin-bottom: 20px;
+
+        #slides {
+            width: 100%;
+            height: 100%;
+            background: white;
         }
-        .buttons {
-            margin: 30px 0;
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
         }
-        .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            margin: 10px;
+
+        .controls button {
             background: #1f77b4;
             color: white;
-            text-decoration: none;
+            border: none;
+            padding: 10px 20px;
             border-radius: 5px;
-            font-size: 18px;
-            transition: background 0.3s;
+            cursor: pointer;
+            font-size: 16px;
         }
-        .btn:hover {
+
+        .controls button:hover {
             background: #2c5aa0;
         }
-        .info {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-top: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        .slide-number {
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>🛡️ The Corporate Shield</h1>
-        <p style="font-size: 20px; color: #666;">직장인 방어 기제 자동화 에이전트</p>
-        
-        <div class="buttons">
-            <a href="presentation.md" class="btn" download>📥 Markdown 다운로드</a>
-            <a href="https://github.com/Seogaeun03/The_Corporate_Shield" class="btn">📂 GitHub 저장소</a>
-        </div>
-        
-        <div class="info">
-            <h2>발표 자료 보는 방법</h2>
-            <ol style="text-align: left; max-width: 600px; margin: 20px auto;">
-                <li><strong>VS Code에서 보기 (권장)</strong>
-                    <ul>
-                        <li>Marp for VS Code 확장 설치</li>
-                        <li>presentation.md 파일 열기</li>
-                        <li>Ctrl + Shift + V로 미리보기</li>
-                    </ul>
-                </li>
-                <li><strong>PDF로 변환</strong>
-                    <ul>
-                        <li>VS Code에서 우클릭 → "Marp: Export slide deck..."</li>
-                        <li>PDF 선택하여 내보내기</li>
-                    </ul>
-                </li>
-            </ol>
-            
-            <h3 style="margin-top: 30px;">프로젝트 정보</h3>
-            <p><strong>개발자:</strong> 서가은</p>
-            <p><strong>목적:</strong> Upstage AI Engineer 포지션 지원</p>
-            <p><strong>기술 스택:</strong> LangGraph, Upstage Solar, Pinecone, Streamlit</p>
-        </div>
+    <div id="loading">Loading presentation...</div>
+    <div id="presentation">
+        <div id="slides"></div>
     </div>
+    <div class="controls">
+        <button onclick="previousSlide()">◀ 이전</button>
+        <span class="slide-number" id="slideNumber">1 / 1</span>
+        <button onclick="nextSlide()">다음 ▶</button>
+        <button onclick="toggleFullscreen()">🖵 전체화면</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let slides = [];
+
+        // Fetch and render Marp presentation
+        async function loadPresentation() {
+            try {
+                const response = await fetch('presentation.md');
+                const markdown = await response.text();
+
+                // Parse Marp markdown
+                const marp = new Marp.Marp({
+                    html: true,
+                    emoji: {
+                        shortcode: true,
+                        unicode: true
+                    }
+                });
+
+                const { html, css } = marp.render(markdown);
+
+                // Inject CSS
+                const style = document.createElement('style');
+                style.textContent = css;
+                document.head.appendChild(style);
+
+                // Inject HTML
+                const slidesContainer = document.getElementById('slides');
+                slidesContainer.innerHTML = html;
+
+                // Get all slides
+                slides = slidesContainer.querySelectorAll('section');
+
+                // Show first slide
+                showSlide(0);
+
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+
+                // Keyboard navigation
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') {
+                        nextSlide();
+                    } else if (e.key === 'ArrowLeft') {
+                        previousSlide();
+                    } else if (e.key === 'f' || e.key === 'F11') {
+                        e.preventDefault();
+                        toggleFullscreen();
+                    }
+                });
+
+            } catch (error) {
+                document.getElementById('loading').textContent = 'Error loading presentation: ' + error.message;
+                console.error('Error:', error);
+            }
+        }
+
+        function showSlide(index) {
+            if (index < 0 || index >= slides.length) return;
+
+            // Hide all slides
+            slides.forEach(slide => slide.style.display = 'none');
+
+            // Show current slide
+            slides[index].style.display = 'block';
+            currentSlide = index;
+
+            // Update slide number
+            document.getElementById('slideNumber').textContent = `${index + 1} / ${slides.length}`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Load presentation on page load
+        loadPresentation();
+    </script>
 </body>
+
 </html>
