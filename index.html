@@ -1,44 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Corporate Shield - Presentation</title>
-    <script src="https://cdn.jsdelivr.net/npm/@marp-team/marp-core/dist/browser.js"></script>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: 'Pretendard', 'Segoe UI', sans-serif;
             background: #000;
+            color: #333;
             overflow: hidden;
         }
 
-        #presentation {
+        .slide-container {
             width: 100vw;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: #000;
         }
 
-        #slides {
-            width: 100%;
-            height: 100%;
+        .slide {
+            display: none;
+            width: 90vw;
+            max-width: 1200px;
+            height: 85vh;
             background: white;
+            padding: 60px;
+            overflow-y: auto;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide h1 {
+            color: #1f77b4;
+            border-bottom: 3px solid #1f77b4;
+            padding-bottom: 10px;
+            font-size: 38px;
+            margin-bottom: 20px;
+        }
+
+        .slide h2 {
+            color: #2c5aa0;
+            font-size: 30px;
+            margin: 20px 0 15px 0;
+        }
+
+        .slide h3 {
+            font-size: 26px;
+            margin: 15px 0 10px 0;
+        }
+
+        .slide p,
+        .slide li {
+            font-size: 22px;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+
+        .slide strong {
+            color: #1f77b4;
+        }
+
+        .slide code,
+        .slide pre {
+            background: #f0f2f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 20px;
+        }
+
+        .slide pre {
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .slide table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 20px;
+        }
+
+        .slide th,
+        .slide td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .slide th {
+            background: #1f77b4;
+            color: white;
+        }
+
+        .slide blockquote {
+            border-left: 4px solid #1f77b4;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #666;
         }
 
         .controls {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 20px;
-            border-radius: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+            border-radius: 50px;
             display: flex;
-            gap: 15px;
+            gap: 20px;
+            align-items: center;
             z-index: 1000;
         }
 
@@ -46,118 +132,307 @@
             background: #1f77b4;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
         }
 
         .controls button:hover {
             background: #2c5aa0;
+            transform: scale(1.05);
+        }
+
+        .controls button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: scale(1);
         }
 
         .slide-number {
             color: white;
-            padding: 10px;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
         }
 
-        #loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 24px;
+        .lead {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .lead h1 {
+            font-size: 48px;
+            border: none;
+        }
+
+        .lead h2 {
+            font-size: 32px;
+            margin-top: 20px;
         }
     </style>
 </head>
 
 <body>
-    <div id="loading">Loading presentation...</div>
-    <div id="presentation">
+    <div class="slide-container">
         <div id="slides"></div>
     </div>
+
     <div class="controls">
-        <button onclick="previousSlide()">◀ 이전</button>
+        <button id="prevBtn" onclick="previousSlide()">◀ 이전</button>
         <span class="slide-number" id="slideNumber">1 / 1</span>
-        <button onclick="nextSlide()">다음 ▶</button>
+        <button id="nextBtn" onclick="nextSlide()">다음 ▶</button>
         <button onclick="toggleFullscreen()">🖵 전체화면</button>
     </div>
 
     <script>
-        let currentSlide = 0;
-        let slides = [];
-
-        // Fetch and render Marp presentation
-        async function loadPresentation() {
-            try {
-                const response = await fetch('presentation.md');
-                const markdown = await response.text();
-
-                // Parse Marp markdown
-                const marp = new Marp.Marp({
-                    html: true,
-                    emoji: {
-                        shortcode: true,
-                        unicode: true
-                    }
-                });
-
-                const { html, css } = marp.render(markdown);
-
-                // Inject CSS
-                const style = document.createElement('style');
-                style.textContent = css;
-                document.head.appendChild(style);
-
-                // Inject HTML
-                const slidesContainer = document.getElementById('slides');
-                slidesContainer.innerHTML = html;
-
-                // Get all slides
-                slides = slidesContainer.querySelectorAll('section');
-
-                // Show first slide
-                showSlide(0);
-
-                // Hide loading
-                document.getElementById('loading').style.display = 'none';
-
-                // Keyboard navigation
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowRight' || e.key === ' ') {
-                        nextSlide();
-                    } else if (e.key === 'ArrowLeft') {
-                        previousSlide();
-                    } else if (e.key === 'f' || e.key === 'F11') {
-                        e.preventDefault();
-                        toggleFullscreen();
-                    }
-                });
-
-            } catch (error) {
-                document.getElementById('loading').textContent = 'Error loading presentation: ' + error.message;
-                console.error('Error:', error);
+        const slidesData = [
+            {
+                title: "🛡️ The Corporate Shield",
+                content: `
+                    <div class="lead">
+                        <h1>🛡️ The Corporate Shield</h1>
+                        <h2>직장인 방어 기제 자동화 에이전트</h2>
+                        <p style="font-size: 24px; margin-top: 30px;"><strong>AI 기반 정중한 거절 이메일 자동 생성 시스템</strong></p>
+                        <p style="margin-top: 50px; font-size: 20px;">서가은<br>Upstage AI Engineer 포지션 지원</p>
+                    </div>
+                `
+            },
+            {
+                title: "📋 목차",
+                content: `
+                    <h1>📋 목차</h1>
+                    <ol style="font-size: 26px; line-height: 2;">
+                        <li><strong>문제 상황</strong> - 왜 필요한가?</li>
+                        <li><strong>해결 방안</strong> - 어떻게 해결할 것인가?</li>
+                        <li><strong>기술 스택</strong> - 무엇으로 만들 것인가?</li>
+                        <li><strong>핵심 기능</strong> - 어떻게 작동하는가?</li>
+                        <li><strong>구현 계획</strong> - 어떻게 만들 것인가?</li>
+                        <li><strong>결과 및 효과</strong> - 무엇을 얻을 수 있는가?</li>
+                    </ol>
+                `
+            },
+            {
+                title: "😰 문제 상황",
+                content: `
+                    <h1>😰 문제 상황</h1>
+                    <h2>현대 직장인이 겪는 어려움</h2>
+                    <h3>1. 비정형 지시</h3>
+                    <ul>
+                        <li>구두, 화이트보드 사진, 정리되지 않은 PDF</li>
+                        <li>요구사항 파악 자체가 어려움</li>
+                    </ul>
+                    <h3>2. 거절의 어려움</h3>
+                    <ul>
+                        <li>무능하거나 비협조적으로 보일까 두려움</li>
+                        <li>"전문가다운" 핑계가 필요</li>
+                    </ul>
+                    <h3>3. 대응의 비효율</h3>
+                    <ul>
+                        <li>캘린더, 회의록, 사규 확인에 시간 소요</li>
+                        <li>그럴듯한 근거 마련이 어려움</li>
+                    </ul>
+                `
+            },
+            {
+                title: "🎯 프로젝트 개요",
+                content: `
+                    <h1>🎯 프로젝트 개요</h1>
+                    <h2>The Corporate Shield란?</h2>
+                    <blockquote>무리한 업무 지시에 대해 <strong>논리적이고 정중한 거절 사유</strong>를 자동으로 생성하는 AI 에이전트</blockquote>
+                    <h3>핵심 컨셉</h3>
+                    <ul>
+                        <li>📄 복잡한 기획서 자동 분석</li>
+                        <li>🧠 상황별 최적 전략 선택</li>
+                        <li>🔍 사실 기반 증거 수집</li>
+                        <li>✉️ 비즈니스 매너를 갖춘 이메일 생성</li>
+                    </ul>
+                `
+            },
+            {
+                title: "🤔 왜 이 프로젝트인가?",
+                content: `
+                    <h1>🤔 왜 이 프로젝트인가?</h1>
+                    <h2>B급 유머 + A급 기술</h2>
+                    <h3>재미있는 주제</h3>
+                    <ul>
+                        <li>직장인이라면 누구나 공감하는 상황</li>
+                        <li>"핑계 생성기"라는 위트 있는 접근</li>
+                    </ul>
+                    <h3>진지한 기술 스택</h3>
+                    <ul>
+                        <li><strong>LangGraph</strong>: 복잡한 에이전트 워크플로우</li>
+                        <li><strong>RAG</strong>: 사규 기반 검색 시스템</li>
+                        <li><strong>Upstage AI</strong>: Solar LLM, Document Parse, Embedding</li>
+                    </ul>
+                `
+            },
+            {
+                title: "💡 해결 방안",
+                content: `
+                    <h1>💡 해결 방안</h1>
+                    <h2>AI 에이전트로 자동화</h2>
+                    <pre>[복잡한 기획서] 
+    ↓ Document Parse
+[구조화된 데이터]
+    ↓ LangGraph Agent
+[전략 선택] → [증거 수집] → [초안 생성]
+    ↓
+[정중한 거절 이메일]</pre>
+                    <h3>핵심 가치</h3>
+                    <ul>
+                        <li>✅ <strong>시간 절약</strong>: 수동 작업 → 자동화</li>
+                        <li>✅ <strong>논리성</strong>: 사실 기반 근거 제시</li>
+                        <li>✅ <strong>정중함</strong>: 비즈니스 매너 유지</li>
+                    </ul>
+                `
+            },
+            {
+                title: "🏗️ 기술 스택",
+                content: `
+                    <h1>🏗️ 기술 스택</h1>
+                    <table>
+                        <tr><th>구분</th><th>기술</th><th>선정 이유</th></tr>
+                        <tr><td><strong>오케스트레이션</strong></td><td><strong>LangGraph</strong></td><td>순환 가능한 워크플로우</td></tr>
+                        <tr><td><strong>LLM</strong></td><td><strong>Upstage Solar</strong></td><td>한국어 처리 우수</td></tr>
+                        <tr><td><strong>문서 분석</strong></td><td><strong>Upstage Document Parse</strong></td><td>표/서식 파싱</td></tr>
+                        <tr><td><strong>Embedding</strong></td><td><strong>Upstage Embedding</strong></td><td>한국어 특화</td></tr>
+                        <tr><td><strong>Vector DB</strong></td><td><strong>Pinecone</strong></td><td>관리형 벡터 DB</td></tr>
+                        <tr><td><strong>검색</strong></td><td>Tavily API</td><td>LLM 친화적 검색</td></tr>
+                        <tr><td><strong>UI</strong></td><td>Streamlit</td><td>빠른 프로토타이핑</td></tr>
+                    </table>
+                `
+            },
+            {
+                title: "🎬 데모 시나리오",
+                content: `
+                    <h1>🎬 데모 시나리오</h1>
+                    <h2>사용자 스토리</h2>
+                    <h3>상황</h3>
+                    <blockquote>
+                        <strong>상사</strong>: "이번 주까지 신규 CRM 시스템 기획서 만들어줘"<br>
+                        <strong>직원</strong>: (3일 남았는데... 거절하고 싶다)
+                    </blockquote>
+                    <h3>The Corporate Shield 사용 과정</h3>
+                    <ol>
+                        <li>기획서 내용 입력: "CRM 시스템, 3일 마감"</li>
+                        <li>요청 입력: "시간이 부족해요"</li>
+                        <li>AI 분석: Time 전략 선택</li>
+                        <li>증거 수집: 캘린더에서 기존 업무 확인</li>
+                        <li>결과: 정중한 거절 이메일 생성</li>
+                    </ol>
+                `
+            },
+            {
+                title: "✉️ 생성된 이메일 예시",
+                content: `
+                    <h1>✉️ 생성된 이메일 예시</h1>
+                    <p><strong>제목</strong>: CRM 시스템 기획서 일정 관련 협의 요청</p>
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                        <p>안녕하세요,</p>
+                        <p>말씀하신 CRM 시스템 기획서 건에 대해 검토하였습니다.</p>
+                        <p>현재 진행 중인 <strong>레거시 시스템 마이그레이션 프로젝트</strong>가 1월 20일 마감 예정으로, 해당 기간 동안 가용 시간이 제한적인 상황입니다.</p>
+                        <p>품질 높은 기획서를 작성하기 위해서는 충분한 검토 시간이 필요할 것으로 판단됩니다. <strong>일정 조정이 가능하신지</strong> 협의드리고 싶습니다.</p>
+                        <p>감사합니다.</p>
+                    </div>
+                `
+            },
+            {
+                title: "📈 기대 효과",
+                content: `
+                    <h1>📈 기대 효과</h1>
+                    <h2>Upstage AI 역량 입증</h2>
+                    <h3>기술적 성과</h3>
+                    <ul>
+                        <li>✅ Solar LLM 활용</li>
+                        <li>✅ Document Parse 실전 적용</li>
+                        <li>✅ Embedding 기반 RAG 구현</li>
+                    </ul>
+                    <h3>고급 AI 엔지니어링</h3>
+                    <ul>
+                        <li>✅ LangGraph 복잡한 워크플로우</li>
+                        <li>✅ Multi-tool 에이전트</li>
+                        <li>✅ Self-reflection 패턴</li>
+                    </ul>
+                `
+            },
+            {
+                title: "🏆 차별화 포인트",
+                content: `
+                    <h1>🏆 차별화 포인트</h1>
+                    <h2>왜 이 프로젝트가 특별한가?</h2>
+                    <h3>1. 실용성 + 재미</h3>
+                    <ul>
+                        <li>실제 사용 가능한 기능</li>
+                        <li>위트 있는 주제</li>
+                    </ul>
+                    <h3>2. 기술 깊이</h3>
+                    <ul>
+                        <li>단순 LLM 호출이 아닌 복잡한 에이전트</li>
+                        <li>RAG, Document Parse, 웹 검색 통합</li>
+                    </ul>
+                    <h3>3. Upstage 중심</h3>
+                    <ul>
+                        <li>Upstage 제품 3개 활용 (Solar, Document Parse, Embedding)</li>
+                        <li>한국어 특화 강점 활용</li>
+                    </ul>
+                `
+            },
+            {
+                title: "🙏 감사합니다",
+                content: `
+                    <div class="lead">
+                        <h1>🙏 감사합니다</h1>
+                        <h2><strong>The Corporate Shield</strong></h2>
+                        <p style="font-size: 24px;">직장인 방어 기제 자동화 에이전트</p>
+                        <div style="margin-top: 50px; font-size: 20px;">
+                            <p><strong>서가은</strong></p>
+                            <p>📧 your.email@example.com</p>
+                            <p>🔗 github.com/Seogaeun03/The_Corporate_Shield</p>
+                            <p style="margin-top: 30px;"><strong>Upstage AI Engineer 포지션 지원</strong></p>
+                            <p style="margin-top: 50px; font-size: 24px;">질문이 있으시면 언제든지 말씀해주세요! 🙋‍♂️</p>
+                        </div>
+                    </div>
+                `
             }
+        ];
+
+        let currentSlide = 0;
+
+        function renderSlides() {
+            const container = document.getElementById('slides');
+            slidesData.forEach((slide, index) => {
+                const slideDiv = document.createElement('div');
+                slideDiv.className = 'slide' + (index === 0 ? ' active' : '');
+                slideDiv.innerHTML = slide.content;
+                container.appendChild(slideDiv);
+            });
+            updateControls();
         }
 
         function showSlide(index) {
-            if (index < 0 || index >= slides.length) return;
-
-            // Hide all slides
-            slides.forEach(slide => slide.style.display = 'none');
-
-            // Show current slide
-            slides[index].style.display = 'block';
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
             currentSlide = index;
+            updateControls();
+        }
 
-            // Update slide number
-            document.getElementById('slideNumber').textContent = `${index + 1} / ${slides.length}`;
+        function updateControls() {
+            document.getElementById('slideNumber').textContent = `${currentSlide + 1} / ${slidesData.length}`;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === slidesData.length - 1;
         }
 
         function nextSlide() {
-            if (currentSlide < slides.length - 1) {
+            if (currentSlide < slidesData.length - 1) {
                 showSlide(currentSlide + 1);
             }
         }
@@ -176,8 +451,22 @@
             }
         }
 
-        // Load presentation on page load
-        loadPresentation();
+        // 키보드 네비게이션
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                previousSlide();
+            } else if (e.key === 'f' || e.key === 'F11') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        });
+
+        // 페이지 로드 시 슬라이드 렌더링
+        renderSlides();
     </script>
 </body>
 
